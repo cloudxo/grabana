@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/K-Phoen/grabana/alert"
-
+	"github.com/K-Phoen/grabana/dashboard"
 	"github.com/grafana-tools/sdk"
 )
 
@@ -38,20 +38,70 @@ type Folder struct {
 	Title string `json:"title"`
 }
 
+// Option represents an option that can be used to configure a client.
+type Option func(client *Client)
+
+type requestModifier func(request *http.Request)
+
 // Client represents a Grafana HTTP client.
 type Client struct {
-	http     *http.Client
-	host     string
-	apiToken string
+	http             *http.Client
+	host             string
+	requestModifiers []requestModifier
 }
 
-// NewClient creates a new Grafana HTTP client.
-func NewClient(http *http.Client, host string, apiToken string) *Client {
-	return &Client{
-		http:     http,
-		host:     host,
-		apiToken: apiToken,
+// NewClient creates a new Grafana HTTP client, using an API token.
+func NewClient(http *http.Client, host string, options ...Option) *Client {
+	client := &Client{
+		http: http,
+		host: host,
 	}
+
+	for _, opt := range options {
+		opt(client)
+	}
+
+	return client
+}
+
+// WithAPIToken sets up the client to use the given token to authenticate.
+func WithAPIToken(token string) Option {
+	return func(client *Client) {
+		client.requestModifiers = append(client.requestModifiers, func(request *http.Request) {
+			request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+		})
+	}
+}
+
+// WithBasicAuth sets up the client to use the given credentials to authenticate.
+func WithBasicAuth(username string, password string) Option {
+	return func(client *Client) {
+		client.requestModifiers = append(client.requestModifiers, func(request *http.Request) {
+			request.SetBasicAuth(username, password)
+		})
+	}
+}
+
+func (client *Client) modifyRequest(request *http.Request) {
+	for _, modifier := range client.requestModifiers {
+		modifier(request)
+	}
+}
+
+// FindOrCreateFolder returns the folder by its name or creates it if it doesn't exist.
+func (client *Client) FindOrCreateFolder(ctx context.Context, name string) (*Folder, error) {
+	folder, err := client.GetFolderByTitle(ctx, name)
+	if err != nil && err != ErrFolderNotFound {
+		return nil, fmt.Errorf("could not find or create folder: %w", err)
+	}
+	if folder == nil {
+		folder, err = client.CreateFolder(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("could not find create folder: %w", err)
+		}
+	}
+
+	return folder, nil
 }
 
 // CreateFolder creates a dashboard folder.
@@ -155,13 +205,13 @@ func (client *Client) GetAlertChannelByName(ctx context.Context, name string) (*
 }
 
 // UpsertDashboard creates or replaces a dashboard, in the given folder.
-func (client *Client) UpsertDashboard(ctx context.Context, folder *Folder, builder DashboardBuilder) (*Dashboard, error) {
+func (client *Client) UpsertDashboard(ctx context.Context, folder *Folder, builder dashboard.Builder) (*Dashboard, error) {
 	buf, err := json.Marshal(struct {
 		Dashboard *sdk.Board `json:"dashboard"`
 		FolderID  uint       `json:"folderId"`
 		Overwrite bool       `json:"overwrite"`
 	}{
-		Dashboard: builder.board,
+		Dashboard: builder.Internal(),
 		FolderID:  folder.ID,
 		Overwrite: true,
 	})
@@ -185,12 +235,44 @@ func (client *Client) UpsertDashboard(ctx context.Context, folder *Folder, build
 		return nil, fmt.Errorf("could not create dashboard: %s", body)
 	}
 
-	var dashboard Dashboard
-	if err := decodeJSON(resp.Body, &dashboard); err != nil {
+	var model Dashboard
+	if err := decodeJSON(resp.Body, &model); err != nil {
 		return nil, err
 	}
 
-	return &dashboard, nil
+	return &model, nil
+}
+
+// DeleteDashboard deletes a dashboard given its UID.
+func (client *Client) DeleteDashboard(ctx context.Context, uid string) error {
+	resp, err := client.delete(ctx, "/api/dashboards/uid/"+uid)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		return fmt.Errorf("could not delete dashboard: %s", body)
+	}
+
+	return nil
+}
+
+func (client Client) delete(ctx context.Context, path string) (*http.Response, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodDelete, client.url(path), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client.modifyRequest(request)
+
+	return client.http.Do(request)
 }
 
 func (client Client) postJSON(ctx context.Context, path string, body []byte) (*http.Response, error) {
@@ -200,7 +282,7 @@ func (client Client) postJSON(ctx context.Context, path string, body []byte) (*h
 	}
 
 	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.apiToken))
+	client.modifyRequest(request)
 
 	return client.http.Do(request)
 }
@@ -211,7 +293,7 @@ func (client Client) get(ctx context.Context, path string) (*http.Response, erro
 		return nil, err
 	}
 
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.apiToken))
+	client.modifyRequest(request)
 
 	return client.http.Do(request)
 }

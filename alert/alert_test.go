@@ -32,7 +32,30 @@ func TestNotificationCanBeSet(t *testing.T) {
 
 	req.Len(a.Builder.Notifications, 1)
 	req.Equal("channel", a.Builder.Notifications[0].UID)
-	req.Equal(int64(1), a.Builder.Notifications[0].ID)
+	req.Empty(a.Builder.Notifications[0].ID)
+}
+
+func TestNotificationCanBeSetInBulk(t *testing.T) {
+	req := require.New(t)
+	channel := &Channel{ID: 1, UID: "channel"}
+	otherChannel := &Channel{ID: 2, UID: "other-channel"}
+
+	a := New("", NotifyChannels(channel, otherChannel))
+
+	req.Len(a.Builder.Notifications, 2)
+	req.ElementsMatch([]string{"channel", "other-channel"}, []string{a.Builder.Notifications[0].UID, a.Builder.Notifications[1].UID})
+	req.Empty(a.Builder.Notifications[0].ID)
+	req.Empty(a.Builder.Notifications[1].ID)
+}
+
+func TestNotificationCanBeSetByChannelID(t *testing.T) {
+	req := require.New(t)
+
+	a := New("", NotifyChannel("P-N3fxuZz"))
+
+	req.Len(a.Builder.Notifications, 1)
+	req.Equal("P-N3fxuZz", a.Builder.Notifications[0].UID)
+	req.Empty(a.Builder.Notifications[0].ID)
 }
 
 func TestForIntervalCanBeSet(t *testing.T) {

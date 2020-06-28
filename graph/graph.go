@@ -4,6 +4,7 @@ import (
 	"github.com/K-Phoen/grabana/alert"
 	"github.com/K-Phoen/grabana/axis"
 	"github.com/K-Phoen/grabana/target/prometheus"
+	"github.com/K-Phoen/grabana/target/stackdriver"
 	"github.com/grafana-tools/sdk"
 )
 
@@ -63,21 +64,6 @@ const (
 	NoZeroSeries
 )
 
-type legend struct {
-	AlignAsTable bool  `json:"alignAsTable"`
-	Avg          bool  `json:"avg"`
-	Current      bool  `json:"current"`
-	HideEmpty    bool  `json:"hideEmpty"`
-	HideZero     bool  `json:"hideZero"`
-	Max          bool  `json:"max"`
-	Min          bool  `json:"min"`
-	RightSide    bool  `json:"rightSide"`
-	Show         bool  `json:"show"`
-	SideWidth    *uint `json:"sideWidth,omitempty"`
-	Total        bool  `json:"total"`
-	Values       bool  `json:"values"`
-}
-
 // Graph represents a graph panel.
 type Graph struct {
 	Builder *sdk.Panel
@@ -131,6 +117,7 @@ func WithPrometheusTarget(query string, options ...prometheus.Option) Option {
 	return func(graph *Graph) {
 		graph.Builder.AddTarget(&sdk.Target{
 			RefID:          target.Ref,
+			Hide:           target.Hidden,
 			Expr:           target.Expr,
 			IntervalFactor: target.IntervalFactor,
 			Interval:       target.Interval,
@@ -139,6 +126,13 @@ func WithPrometheusTarget(query string, options ...prometheus.Option) Option {
 			Instant:        target.Instant,
 			Format:         target.Format,
 		})
+	}
+}
+
+// WithStackdriverTarget adds a stackdriver query to the graph.
+func WithStackdriverTarget(target *stackdriver.Stackdriver) Option {
+	return func(graph *Graph) {
+		graph.Builder.AddTarget(target.Builder)
 	}
 }
 
@@ -248,7 +242,7 @@ func Staircase() Option {
 }
 
 // PointRadius adjusts the size of points when Points are selected as Draw Mode.
-func PointRadius(value int) Option {
+func PointRadius(value float32) Option {
 	return func(graph *Graph) {
 		graph.Builder.Pointradius = value
 	}
@@ -264,7 +258,7 @@ func Null(mode NullValue) Option {
 // Legend defines what should be shown in the legend.
 func Legend(opts ...LegendOption) Option {
 	return func(graph *Graph) {
-		legend := legend{Show: true}
+		legend := sdk.Legend{Show: true}
 
 		for _, opt := range opts {
 			switch opt {

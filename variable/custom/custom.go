@@ -1,6 +1,7 @@
 package custom
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/grafana-tools/sdk"
@@ -18,6 +19,8 @@ func (values ValuesMap) asQuery() string {
 	for _, value := range values {
 		valuesList = append(valuesList, value)
 	}
+
+	sort.Strings(valuesList)
 
 	return strings.Join(valuesList, ",")
 }
@@ -114,5 +117,12 @@ func IncludeAll() Option {
 			Text:  "All",
 			Value: "$__all",
 		})
+	}
+}
+
+// AllValue define the value used when selecting the "All" option.
+func AllValue(value string) Option {
+	return func(custom *Custom) {
+		custom.Builder.AllValue = value
 	}
 }

@@ -62,12 +62,32 @@ func New(name string, options ...Option) *Alert {
 	return alert
 }
 
-// Notify adds a notification for this alert.
+// Notify adds a notification for this alert given a channel.
 func Notify(channel *Channel) Option {
 	return func(alert *Alert) {
 		alert.Builder.Notifications = append(alert.Builder.Notifications, sdk.AlertNotification{
-			ID:  int64(channel.ID),
 			UID: channel.UID,
+		})
+	}
+}
+
+// NotifyChannels appends the given notification channels to the list of
+// channels for this alert.
+func NotifyChannels(channels ...*Channel) Option {
+	return func(alert *Alert) {
+		for _, channel := range channels {
+			alert.Builder.Notifications = append(alert.Builder.Notifications, sdk.AlertNotification{
+				UID: channel.UID,
+			})
+		}
+	}
+}
+
+// NotifyChannel adds a notification for this alert given a channel UID.
+func NotifyChannel(channelUID string) Option {
+	return func(alert *Alert) {
+		alert.Builder.Notifications = append(alert.Builder.Notifications, sdk.AlertNotification{
+			UID: channelUID,
 		})
 	}
 }
@@ -116,7 +136,7 @@ func OnNoData(mode NoDataMode) Option {
 func If(operator Operator, opts ...ConditionOption) Option {
 	return func(alert *Alert) {
 		cond := newCondition(opts...)
-		cond.builder.Operator = conditionOperator{Type: string(operator)}
+		cond.builder.Operator = sdk.AlertOperator{Type: string(operator)}
 
 		alert.Builder.Conditions = append(alert.Builder.Conditions, *cond.builder)
 	}

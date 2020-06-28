@@ -64,8 +64,7 @@ type (
 		Links         []link      `json:"links"`
 		Time          Time        `json:"time"`
 		Timepicker    Timepicker  `json:"timepicker"`
-		lastPanelID   uint
-		GraphTooltip  int `json:"graphTooltip,omitempty"`
+		GraphTooltip  int         `json:"graphTooltip,omitempty"`
 	}
 	Time struct {
 		From string `json:"from"`
@@ -149,7 +148,7 @@ type link struct {
 type Height string
 
 func (h *Height) UnmarshalJSON(raw []byte) error {
-	if raw == nil || bytes.Compare(raw, []byte(`"null"`)) == 0 {
+	if raw == nil || bytes.Equal(raw, []byte(`"null"`)) {
 		return nil
 	}
 	if raw[0] != '"' {
@@ -172,17 +171,20 @@ func NewBoard(title string) *Board {
 		Timezone:     "browser",
 		Editable:     true,
 		HideControls: false,
-		Rows:         []*Row{}}
+		Rows:         []*Row{},
+	}
 }
 
 func (b *Board) RemoveTags(tags ...string) {
-	tagFound := make(map[string]int, len(b.Tags))
-	for i, tag := range b.Tags {
-		tagFound[tag] = i
-	}
-	for _, removeTag := range tags {
-		if i, ok := tagFound[removeTag]; ok {
-			b.Tags = append(b.Tags[:i], b.Tags[i+1:]...)
+	// order might change after removing the tags
+	for _, toRemoveTag := range tags {
+		tagLen := len(b.Tags)
+		for i, tag := range b.Tags {
+			if tag == toRemoveTag {
+				b.Tags[tagLen-1], b.Tags[i] = b.Tags[i], b.Tags[tagLen-1]
+				b.Tags = b.Tags[:tagLen-1]
+				break
+			}
 		}
 	}
 }
@@ -197,6 +199,7 @@ func (b *Board) AddTags(tags ...string) {
 			continue
 		}
 		b.Tags = append(b.Tags, tag)
+		tagFound[tag] = true
 	}
 }
 

@@ -88,22 +88,26 @@ type (
 		Type        string  `json:"type"`
 		Alert       *Alert  `json:"alert,omitempty"`
 	}
-	AlertCondition struct {
-		Evaluator struct {
-			Params []float64 `json:"params,omitempty"`
-			Type   string    `json:"type,omitempty"`
-		} `json:"evaluator,omitempty"`
-		Operator struct {
-			Type string `json:"type,omitempty"`
-		} `json:"operator,omitempty"`
-		Query struct {
-			Params []string `json:"params,omitempty"`
-		} `json:"query,omitempty"`
-		Reducer struct {
-			Params []string `json:"params,omitempty"`
-			Type   string   `json:"type,omitempty"`
-		} `json:"reducer,omitempty"`
+	AlertEvaluator struct {
+		Params []float64 `json:"params,omitempty"`
+		Type   string    `json:"type,omitempty"`
+	}
+	AlertOperator struct {
 		Type string `json:"type,omitempty"`
+	}
+	AlertQuery struct {
+		Params []string `json:"params,omitempty"`
+	}
+	AlertReducer struct {
+		Params []string `json:"params,omitempty"`
+		Type   string   `json:"type,omitempty"`
+	}
+	AlertCondition struct {
+		Evaluator AlertEvaluator `json:"evaluator,omitempty"`
+		Operator  AlertOperator  `json:"operator,omitempty"`
+		Query     AlertQuery     `json:"query,omitempty"`
+		Reducer   AlertReducer   `json:"reducer,omitempty"`
+		Type      string         `json:"type,omitempty"`
 	}
 	Alert struct {
 		Conditions          []AlertCondition    `json:"conditions,omitempty"`
@@ -126,26 +130,13 @@ type (
 		Fill        int         `json:"fill"`
 		//		Grid        grid        `json:"grid"` obsoleted in 4.1 by xaxis and yaxis
 
-		Legend struct {
-			AlignAsTable bool  `json:"alignAsTable"`
-			Avg          bool  `json:"avg"`
-			Current      bool  `json:"current"`
-			HideEmpty    bool  `json:"hideEmpty"`
-			HideZero     bool  `json:"hideZero"`
-			Max          bool  `json:"max"`
-			Min          bool  `json:"min"`
-			RightSide    bool  `json:"rightSide"`
-			Show         bool  `json:"show"`
-			SideWidth    *uint `json:"sideWidth,omitempty"`
-			Total        bool  `json:"total"`
-			Values       bool  `json:"values"`
-		} `json:"legend,omitempty"`
+		Legend          Legend           `json:"legend,omitempty"`
 		LeftYAxisLabel  *string          `json:"leftYAxisLabel,omitempty"`
 		Lines           bool             `json:"lines"`
 		Linewidth       uint             `json:"linewidth"`
 		NullPointMode   string           `json:"nullPointMode"`
 		Percentage      bool             `json:"percentage"`
-		Pointradius     int              `json:"pointradius"`
+		Pointradius     float32          `json:"pointradius"`
 		Points          bool             `json:"points"`
 		RightYAxisLabel *string          `json:"rightYAxisLabel,omitempty"`
 		SeriesOverrides []SeriesOverride `json:"seriesOverrides,omitempty"`
@@ -188,41 +179,29 @@ type (
 		Sort         int    `json:"sort,omitempty"`
 	}
 	TablePanel struct {
-		Columns []Column `json:"columns"`
-		Sort    *struct {
-			Col  uint `json:"col"`
-			Desc bool `json:"desc"`
-		} `json:"sort,omitempty"`
+		Columns   []Column      `json:"columns"`
+		Sort      *Sort         `json:"sort,omitempty"`
 		Styles    []ColumnStyle `json:"styles"`
 		Transform string        `json:"transform"`
 		Targets   []Target      `json:"targets,omitempty"`
 		Scroll    bool          `json:"scroll"` // from grafana 3.x
 	}
 	TextPanel struct {
-		Content    string `json:"content"`
-		Mode       string `json:"mode"`
-		PageSize   uint   `json:"pageSize"`
-		Scroll     bool   `json:"scroll"`
-		ShowHeader bool   `json:"showHeader"`
-		Sort       struct {
-			Col  int  `json:"col"`
-			Desc bool `json:"desc"`
-		} `json:"sort"`
-		Styles []ColumnStyle `json:"styles"`
+		Content    string        `json:"content"`
+		Mode       string        `json:"mode"`
+		PageSize   uint          `json:"pageSize"`
+		Scroll     bool          `json:"scroll"`
+		ShowHeader bool          `json:"showHeader"`
+		Sort       Sort          `json:"sort"`
+		Styles     []ColumnStyle `json:"styles"`
 	}
 	SinglestatPanel struct {
-		Colors          []string `json:"colors"`
-		ColorValue      bool     `json:"colorValue"`
-		ColorBackground bool     `json:"colorBackground"`
-		Decimals        int      `json:"decimals"`
-		Format          string   `json:"format"`
-		Gauge           struct {
-			MaxValue         float32 `json:"maxValue"`
-			MinValue         float32 `json:"minValue"`
-			Show             bool    `json:"show"`
-			ThresholdLabels  bool    `json:"thresholdLabels"`
-			ThresholdMarkers bool    `json:"thresholdMarkers"`
-		} `json:"gauge,omitempty"`
+		Colors          []string    `json:"colors"`
+		ColorValue      bool        `json:"colorValue"`
+		ColorBackground bool        `json:"colorBackground"`
+		Decimals        int         `json:"decimals"`
+		Format          string      `json:"format"`
+		Gauge           Gauge       `json:"gauge,omitempty"`
 		MappingType     *uint       `json:"mappingType,omitempty"`
 		MappingTypes    []*MapType  `json:"mappingTypes,omitempty"`
 		MaxDataPoints   *IntString  `json:"maxDataPoints,omitempty"`
@@ -232,19 +211,12 @@ type (
 		Prefix          *string     `json:"prefix,omitempty"`
 		PrefixFontSize  *string     `json:"prefixFontSize,omitempty"`
 		RangeMaps       []*RangeMap `json:"rangeMaps,omitempty"`
-		SparkLine       struct {
-			FillColor *string  `json:"fillColor,omitempty"`
-			Full      bool     `json:"full,omitempty"`
-			LineColor *string  `json:"lineColor,omitempty"`
-			Show      bool     `json:"show,omitempty"`
-			YMin      *float64 `json:"ymin,omitempty"`
-			YMax      *float64 `json:"ymax,omitempty"`
-		} `json:"sparkline,omitempty"`
-		Targets       []Target   `json:"targets,omitempty"`
-		Thresholds    string     `json:"thresholds"`
-		ValueFontSize string     `json:"valueFontSize"`
-		ValueMaps     []ValueMap `json:"valueMaps"`
-		ValueName     string     `json:"valueName"`
+		SparkLine       SparkLine   `json:"sparkline,omitempty"`
+		Targets         []Target    `json:"targets,omitempty"`
+		Thresholds      string      `json:"thresholds"`
+		ValueFontSize   string      `json:"valueFontSize"`
+		ValueMaps       []ValueMap  `json:"valueMaps"`
+		ValueName       string      `json:"valueName"`
 	}
 	DashlistPanel struct {
 		Mode  string   `json:"mode"`
@@ -274,7 +246,7 @@ type (
 type (
 	// TODO look at schema versions carefully
 	// grid was obsoleted by xaxis and yaxes
-	grid struct {
+	grid struct { //nolint: unused,deadcode
 		LeftLogBase     *int     `json:"leftLogBase"`
 		LeftMax         *int     `json:"leftMax"`
 		LeftMin         *int     `json:"leftMin"`
@@ -287,7 +259,7 @@ type (
 		Threshold2Color string   `json:"threshold2Color"`
 		ThresholdLine   bool     `json:"thresholdLine"`
 	}
-	xaxis struct {
+	xaxis struct { //nolint:unused,deadcode
 		Mode   string      `json:"mode"`
 		Name   interface{} `json:"name"` // TODO what is this?
 		Show   bool        `json:"show"`
@@ -315,6 +287,24 @@ type (
 		ZIndex        *int        `json:"zindex,omitempty"`
 		NullPointMode *string     `json:"nullPointMode,omitempty"`
 	}
+	Sort struct {
+		Col  int  `json:"col"`
+		Desc bool `json:"desc"`
+	}
+	Legend struct {
+		AlignAsTable bool  `json:"alignAsTable"`
+		Avg          bool  `json:"avg"`
+		Current      bool  `json:"current"`
+		HideEmpty    bool  `json:"hideEmpty"`
+		HideZero     bool  `json:"hideZero"`
+		Max          bool  `json:"max"`
+		Min          bool  `json:"min"`
+		RightSide    bool  `json:"rightSide"`
+		Show         bool  `json:"show"`
+		SideWidth    *uint `json:"sideWidth,omitempty"`
+		Total        bool  `json:"total"`
+		Values       bool  `json:"values"`
+	}
 )
 
 // for a table
@@ -337,16 +327,34 @@ type (
 )
 
 // for a singlestat
-type ValueMap struct {
-	Op       string `json:"op"`
-	TextType string `json:"text"`
-	Value    string `json:"value"`
-}
+type (
+	ValueMap struct {
+		Op       string `json:"op"`
+		TextType string `json:"text"`
+		Value    string `json:"value"`
+	}
+	Gauge struct {
+		MaxValue         float32 `json:"maxValue"`
+		MinValue         float32 `json:"minValue"`
+		Show             bool    `json:"show"`
+		ThresholdLabels  bool    `json:"thresholdLabels"`
+		ThresholdMarkers bool    `json:"thresholdMarkers"`
+	}
+	SparkLine struct {
+		FillColor *string  `json:"fillColor,omitempty"`
+		Full      bool     `json:"full,omitempty"`
+		LineColor *string  `json:"lineColor,omitempty"`
+		Show      bool     `json:"show,omitempty"`
+		YMin      *float64 `json:"ymin,omitempty"`
+		YMax      *float64 `json:"ymax,omitempty"`
+	}
+)
 
 // for an any panel
 type Target struct {
 	RefID      string `json:"refId"`
 	Datasource string `json:"datasource,omitempty"`
+	Hide       bool   `json:"hide,omitempty"`
 
 	// For Prometheus
 	Expr           string `json:"expr,omitempty"`
@@ -391,6 +399,37 @@ type Target struct {
 	Dimensions map[string]string `json:"dimensions,omitempty"`
 	Period     string            `json:"period,omitempty"`
 	Region     string            `json:"region,omitempty"`
+
+	// For the Stackdriver data source. Find out more information at
+	// https:/grafana.com/docs/grafana/v6.0/features/datasources/stackdriver/
+	AlignOptions       []StackdriverAlignOptions `json:"alignOptions,omitempty"`
+	AliasBy            string                    `json:"aliasBy,omitempty"`
+	MetricType         string                    `json:"metricType,omitempty"`
+	MetricKind         string                    `json:"metricKind,omitempty"`
+	Filters            []string                  `json:"filters,omitempty"`
+	AlignmentPeriod    string                    `json:"alignmentPeriod,omitempty"`
+	CrossSeriesReducer string                    `json:"crossSeriesReducer,omitempty"`
+	PerSeriesAligner   string                    `json:"perSeriesAligner,omitempty"`
+	ValueType          string                    `json:"valueType,omitempty"`
+	GroupBys           []string                  `json:"groupBys,omitempty"`
+}
+
+// StackdriverAlignOptions defines the list of alignment options shown in
+// Grafana during query configuration.
+type StackdriverAlignOptions struct {
+	Expanded bool                     `json:"expanded"`
+	Label    string                   `json:"label"`
+	Options  []StackdriverAlignOption `json:"options"`
+}
+
+// StackdriverAlignOption defines a single alignment option shown in Grafana
+// during query configuration.
+type StackdriverAlignOption struct {
+	Label       string   `json:"label"`
+	MetricKinds []string `json:"metricKinds"`
+	Text        string   `json:"text"`
+	Value       string   `json:"value"`
+	ValueTypes  []string `json:"valueTypes"`
 }
 
 type MapType struct {
